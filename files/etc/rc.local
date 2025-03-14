@@ -1,0 +1,7 @@
+# Put your custom commands here that should be executed once
+# oc - nikki #
+#sh /usr/bin/jam_oc.sh tr.line.me
+#sh /usr/bin/jam_nikki.sh tr.line.me
+#sleep 4 && /usr/bin/k5hgled -r
+#sleep 4 && /usr/bin/k6hgled -r
+exit 0
