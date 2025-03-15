@@ -132,7 +132,7 @@ repackwrt() {
     local device_output_dir
     if [[ "$builder_type" == "--ophub" ]]; then
         log "INFO" "Running OphubBuilder..."
-        if ! sudo ./remake -b "${target_board}" -k "${target_kernel}" -r ophub -u flippy -s 768; then
+        if ! sudo ./remake -b "${target_board}" -k "${target_kernel}" -s 768; then
             error_msg "OphubBuilder execution failed"
             exit 1
         fi
