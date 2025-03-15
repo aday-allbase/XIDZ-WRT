@@ -15,7 +15,7 @@ PACKAGES=""
 # Base
 PACKAGES+=" dnsmasq-full cgi-io libiwinfo libiwinfo-data libiwinfo-lua liblua \
 liblucihttp liblucihttp-lua libubus-lua lua block-mount adb curl \
-htop coreutils-stty coreutils-base64 coreutils-stat coreutils-sleep  \
+htop coreutils-stty coreutils-base64 coreutils-stat coreutils-sleep screen \
 rpcd rpcd-mod-file rpcd-mod-iwinfo rpcd-mod-luci rpcd-mod-rrdns jq jshn \
 libjson-script liblucihttp liblucihttp-lua lolcat lsblk tar unzip \
 zram-swap uhttpd uhttpd-mod-ubus uuidgen wget-ssl zoneinfo-asia zoneinfo-core \
