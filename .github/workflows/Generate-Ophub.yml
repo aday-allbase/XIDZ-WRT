@@ -508,7 +508,7 @@ jobs:
           
       - name: Mod SDCard
         id: modsdcard
-        if: steps.non.outputs.status == 'success'
+        if: steps.repack.outputs.status == 'success'
         run: |
           cd ${WORKING_DIR}
           chmod +x scripts/MODSDCARD.sh
@@ -517,7 +517,7 @@ jobs:
           
       - name: Before Upload
         id: beforeupload
-        if: steps.repack.outputs.status == 'success'
+        if: steps.modsdcard.outputs.status == 'success'
         run: |
           cd ${{ env.WORKING_DIR }}
           chmod +x scripts/RENAMEFW.sh
