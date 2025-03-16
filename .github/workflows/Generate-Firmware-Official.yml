@@ -127,7 +127,7 @@ jobs:
             RELEASE_TAG="openwrt-Official-${BRANCH}-${DATE}"
             echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_OUTPUT
             echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_OUTPUT
-          else
+          elif [ "${BASE}" == "immortalwrt" ]; then
             RELEASE_NAME="ImmortalWRT-Official-${BRANCH}-${DATE}"
             RELEASE_TAG="immortalwrt-Official-${BRANCH}-${DATE}"
             echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_OUTPUT
