@@ -120,20 +120,6 @@ configure_amlogic_permissions() {
     esac
 }
 
-# Download custom scripts
-download_custom_scripts() {
-    log "INFO" "Downloading custom scripts"
-    
-    local scripts=(
-        "https://raw.githubusercontent.com/frizkyiman/fix-read-only/main/install2.sh|files/root"
-    )
-    
-    for script in "${scripts[@]}"; do
-        IFS='|' read -r url path <<< "$script"
-        wget --no-check-certificate -nv -P "$path" "$url" || error "Failed to download: $url"
-    done
-}
-
 # Main execution
 main() {
     init_environment
@@ -141,7 +127,6 @@ main() {
     handle_amlogic_files
     setup_branch_config
     configure_amlogic_permissions
-    download_custom_scripts
     log "SUCCESS" "All custom configuration setup completed!"
 }
 

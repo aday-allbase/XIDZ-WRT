@@ -4,7 +4,7 @@ exec > /root/setup.log 2>&1
 
 # dont remove!
 echo "Installed Time: $(date '+%A, %d %B %Y %T')"
-sed -i "s#_('Firmware Version'),(L.isObject(boardinfo.release)?boardinfo.release.description+' / ':'')+(luciversion||''),#_('Firmware Version'),(L.isObject(boardinfo.release)?boardinfo.release.description+' By Xidz_x':''),#g" /www/luci-static/resources/view/status/include/10_system.js
+sed -i "s#_('Firmware Version'),(L.isObject(boardinfo.release)?boardinfo.release.description+' / ':'')+(luciversion||''),#_('Firmware Version'),(L.isObject(boardinfo.release)?boardinfo.release.description+' By OPEN-WRT':''),#g" /www/luci-static/resources/view/status/include/10_system.js
 sed -i -E "s|icons/port_%s.png|icons/port_%s.gif|g" /www/luci-static/resources/view/status/include/29_ports.js
 sed -i -E "s|services/ttyd|system/ttyd|g"
 if grep -q "ImmortalWrt" /etc/openwrt_release; then
@@ -18,7 +18,7 @@ echo "Tunnel Installed: $(opkg list-installed | grep -e luci-app-openclash -e lu
 
 # Set hostname and Timezone to Asia/Jakarta
 echo "Set hostname and Timezone to Asia/Jakarta"
-uci set system.@system[0].hostname='XIDZ-WRT'
+uci set system.@system[0].hostname='OPEN-WRT'
 uci set system.@system[0].timezone='WIB-7'
 uci set system.@system[0].zonename='Asia/Jakarta'
 uci -q delete system.ntp.server
@@ -32,29 +32,19 @@ uci set luci.@core[0].lang='en' && uci commit
 
 # configure wan and lan
 echo "configure wan and lan"
-uci set network.WAN=interface
-uci set network.WAN.proto='dhcp'
-uci set network.WAN.device='eth1'
-uci set network.WAN.metric='5'
-uci set network.WAN2=interface
-uci set network.WAN2.proto='dhcp'
-uci set network.WAN2.device='eth2'
-uci set network.WAN2.metric='10'
-uci set network.MODEM=interface
-uci set network.MODEM.proto='dhcp'
-uci set network.MODEM.device='wwan0'
-uci set network.MODEM.metric='15'
-uci set network.MM=interface
-uci set network.MM.proto='modemmanager'
-uci set network.MM.device='/sys/devices/platform/scb/fd500000.pcie/pci0000:00/0000:00:00.0/0000:01:00.0/usb2/2-1'
-uci set network.MM.apn='internet'
-uci set network.MM.auth='none'
-uci set network.MM.iptype='ipv4'
-uci set network.MM.signalrate='10'
-uci set network.MM.metric='20'
+uci set network.wan=interface
+uci set network.wan.proto='dhcp'
+uci set network.wan.device='eth1'
+uci set network.mm=interface
+uci set network.mm.proto='modemmanager'
+uci set network.mm.device='/sys/devices/platform/scb/fd500000.pcie/pci0000:00/0000:00:00.0/0000:01:00.0/usb2/2-1'
+uci set network.mm.apn='internet'
+uci set network.mm.auth='none'
+uci set network.mm.iptype='ipv4'
+uci set network.mm.signalrate='10'
 uci -q delete network.wan6
 uci commit network
-uci set firewall.@zone[1].network='WAN WAN2 MODEM MM'
+uci set firewall.@zone[1].network='wan mm'
 uci commit firewall
 
 # configure ipv6
@@ -70,12 +60,12 @@ uci set wireless.@wifi-iface[0].disabled='0'
 uci set wireless.@wifi-iface[0].encryption='none'
 uci set wireless.@wifi-device[0].country='ID'
 if grep -q "Raspberry Pi 4\|Raspberry Pi 3" /proc/cpuinfo; then
-  uci set wireless.@wifi-iface[0].ssid='XIDZ-WRT_5G'
+  uci set wireless.@wifi-iface[0].ssid='OPEN-WRT_5G'
   uci set wireless.@wifi-device[0].channel='149'
   uci set wireless.radio0.htmode='HT40'
   uci set wireless.radio0.band='5g'
 else
-  uci set wireless.@wifi-iface[0].ssid='XIDZ-WRT'
+  uci set wireless.@wifi-iface[0].ssid='OPEN-WRT'
   uci set wireless.@wifi-device[0].channel='1'
   uci set wireless.@wifi-device[0].band='2g'
 fi
@@ -105,13 +95,13 @@ fi
 # custom repo and Disable opkg signature check
 echo "custom repo and Disable opkg signature check"
 sed -i 's/option check_signature/# option check_signature/g' /etc/opkg.conf
-echo "src/gz custom_pkg https://dl.openwrt.ai/latest/packages/$(grep "OPENWRT_ARCH" /etc/os-release | awk -F '"' '{print $2}')/kiddin9" >> /etc/opkg/customfeeds.conf
+# echo "src/gz custom_pkg https://dl.openwrt.ai/latest/packages/$(grep "OPENWRT_ARCH" /etc/os-release | awk -F '"' '{print $2}')/kiddin9" >> /etc/opkg/customfeeds.conf
 
 # Set login root password
-(echo "xidz"; sleep 1; echo "xidz") | passwd > /dev/null
+(echo "root"; sleep 1; echo "root") | passwd > /dev/null
 
 # setup default theme
-uci set luci.main.mediaurlbase='/luci-static/argon' && uci commit
+uci set luci.main.mediaurlbase='/luci-static/material' && uci commit
 
 # remove login password ttyd
 uci set ttyd.@ttyd[0].command='/bin/bash --login' && uci commit
@@ -124,10 +114,6 @@ sed -i -e '/413c:81d7/,+5d' /etc/usb-mode.json
 
 # Disable /etc/config/xmm-modem
 uci set xmm-modem.@xmm-modem[0].enable='0' && uci commit
-
-# install2.sh
-chmod +x /root/install2.sh
-bash /root/install2.sh
 
 # setup misc settings
 echo "setup misc settings"
