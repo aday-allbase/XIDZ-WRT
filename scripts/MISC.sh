@@ -65,10 +65,10 @@ setup_branch_config() {
 }
 
 # Configure file permissions for Amlogic
-configure_amlogic_permissions() {
-    case "${TYPE}" in
-        "OPHUB")
-            log "INFO" "Setting up Amlogic file permissions"
+# configure_amlogic_permissions() {
+#    case "${TYPE}" in
+#        "OPHUB")
+#            log "INFO" "Setting up Amlogic file permissions"
 #            local netifd_files=(
 #                "/lib/netifd/proto/3g.sh"
 #                "/lib/netifd/proto/dhcp.sh"
@@ -87,11 +87,11 @@ configure_amlogic_permissions() {
 #            )
             
 #            for file in "${netifd_files[@]}"; do
-                sed -i "/# setup misc settings/ a\chmod +x $file" files/etc/uci-defaults/99-init-settings.sh
+#                sed -i "/# setup misc settings/ a\chmod +x $file" files/etc/uci-defaults/99-init-settings.sh
 #            done
-            ;;
-        "ULO")
-            log "INFO" "Setting up Amlogic file permissions"
+#            ;;
+#        "ULO")
+#            log "INFO" "Setting up Amlogic file permissions"
 #            local netifd_files=(
 #                "/lib/netifd/proto/3g.sh"
 #                "/lib/netifd/proto/dhcp.sh"
@@ -110,15 +110,15 @@ configure_amlogic_permissions() {
 #            )
             
 #            for file in "${netifd_files[@]}"; do
-                sed -i "/# setup misc settings/ a\chmod +x $file" files/etc/uci-defaults/99-init-settings.sh
+#                sed -i "/# setup misc settings/ a\chmod +x $file" files/etc/uci-defaults/99-init-settings.sh
 #            done
-            ;;
-        *)
-            log "INFO" "Removing lib directory for non-Amlogic build"
-            rm -rf files/lib
-            ;;
-    esac
-}
+#            ;;
+#        *)
+#            log "INFO" "Removing lib directory for non-Amlogic build"
+#            rm -rf files/lib
+#            ;;
+#    esac
+# }
 
 # Main execution
 main() {
@@ -126,7 +126,7 @@ main() {
     setup_base_config
     handle_amlogic_files
     setup_branch_config
-    configure_amlogic_permissions
+#    configure_amlogic_permissions
     log "SUCCESS" "All custom configuration setup completed!"
 }
 
