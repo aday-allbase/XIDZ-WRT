@@ -162,8 +162,8 @@ jobs:
             ### XIDZ-WRT - Information ###
             - Default IP: 192.168.1.1
             - Default username: root
-            - Default password: xidz
-            - Default WIFI name: XIDZ-WRT | XIDZ-WRT_5G
+            - Default password: root
+            - Default WIFI name: OPEN-WRT | OPEN-WRT_5G
             - Default WIFI password: none
             ### Fitur - Fitur ###
             - Amlogic Service

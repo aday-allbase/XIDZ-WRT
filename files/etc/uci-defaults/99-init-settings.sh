@@ -53,39 +53,17 @@ uci -q delete dhcp.lan.ra
 uci -q delete dhcp.lan.ndp
 uci commit dhcp
 
-# configure WLAN
-echo "Setup Wireless if available"
-uci set wireless.@wifi-device[0].disabled='0'
-uci set wireless.@wifi-iface[0].disabled='0'
-uci set wireless.@wifi-iface[0].encryption='none'
-uci set wireless.@wifi-device[0].country='ID'
-if grep -q "Raspberry Pi 4\|Raspberry Pi 3" /proc/cpuinfo; then
-  uci set wireless.@wifi-iface[0].ssid='OPEN-WRT_5G'
-  uci set wireless.@wifi-device[0].channel='149'
-  uci set wireless.radio0.htmode='HT40'
-  uci set wireless.radio0.band='5g'
-else
-  uci set wireless.@wifi-iface[0].ssid='OPEN-WRT'
-  uci set wireless.@wifi-device[0].channel='1'
-  uci set wireless.@wifi-device[0].band='2g'
-fi
-uci commit wireless
-wifi reload && wifi up
-if iw dev | grep -q Interface; then
-  if grep -q "Raspberry Pi 4\|Raspberry Pi 3" /proc/cpuinfo; then
-    if ! grep -q "wifi up" /etc/rc.local; then
-      sed -i '/exit 0/i # remove if you dont use wireless' /etc/rc.local
-      sed -i '/exit 0/i sleep 10 && wifi up' /etc/rc.local
-    fi
-    if ! grep -q "wifi up" /etc/crontabs/root; then
-      echo "# remove if you dont use wireless" >> /etc/crontabs/root
-      echo "0 */12 * * * wifi down && sleep 5 && wifi up" >> /etc/crontabs/root
-      service cron restart
+# Disable IPv6 at system level
+  if [ -f "/etc/sysctl.conf" ]; then
+# Add IPv6 disable settings if not already present
+    if ! grep -q "net.ipv6.conf.all.disable_ipv6" /etc/sysctl.conf; then
+      echo "# Disable IPv6" >> /etc/sysctl.conf
+      echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
+      echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
+      sysctl -p >/dev/null 2>&1
+      echo "INFO" "IPv6 disabled at system level"
     fi
   fi
-else
-  echo "No wireless device detected."
-fi
 
 # Remove sysinfo banner if Devices Amlogic
 if opkg list-installed | grep luci-app-amlogic > /dev/null; then
@@ -112,8 +90,32 @@ sed -i -e '/12d1:15c1/,+5d' /etc/usb-mode.json
 # remove dw5821e usb-modeswitch
 sed -i -e '/413c:81d7/,+5d' /etc/usb-mode.json
 
+# remove Thales MV31-W T99W175 usb-modeswitch
+sed -i -e '/1e2d:00b3/,+5d' /etc/usb-mode.json
+
 # Disable /etc/config/xmm-modem
-uci set xmm-modem.@xmm-modem[0].enable='0' && uci commit
+  if [ -f "/etc/config/xmm-modem" ]; then
+    echo "INFO" "Disabling XMM modem service..."
+    safe_uci set "xmm-modem.@xmm-modem[0].enable" "0"
+    commit_uci "xmm-modem"
+    
+# Restart the service
+    if [ -f "/etc/init.d/xmm-modem" ]; then
+      /etc/init.d/xmm-modem stop
+      echo "INFO" "XMM modem service disabled"
+    fi
+  fi
+  
+# Load USB modem drivers
+  if ! lsmod | grep -q "option"; then
+    modprobe option
+    echo "INFO" "Loaded USB option modem driver"
+  fi
+  
+  if ! lsmod | grep -q "qmi_wwan"; then
+    modprobe qmi_wwan
+    echo "INFO" "Loaded QMI WAN driver"
+  fi
 
 # setup misc settings
 echo "setup misc settings"
@@ -121,7 +123,6 @@ sed -i 's/\[ -f \/etc\/banner \] && cat \/etc\/banner/#&/' /etc/profile
 sed -i 's/\[ -n "$FAILSAFE" \] && cat \/etc\/banner.failsafe/& || \/usr\/bin\/idz/' /etc/profile
 chmod -R +x /sbin
 chmod -R +x /usr/bin
-chmod +x /usr/lib/ModemManager/connection.d/10-report-down
 
 # netdata
 mv /usr/share/netdata/web/lib/jquery-3.6.0.min.js /usr/share/netdata/web/lib/jquery-2.2.4.min.js
@@ -181,18 +182,83 @@ else
 fi
 
 # Setup PHP
-echo "setup php"
-uci set uhttpd.main.ubus_prefix='/ubus'
-uci set uhttpd.main.interpreter='.php=/usr/bin/php-cgi'
-uci set uhttpd.main.index_page='cgi-bin/luci'
-uci add_list uhttpd.main.index_page='index.html'
-uci add_list uhttpd.main.index_page='index.php'
-uci commit uhttpd
-sed -i -E "s|memory_limit = [0-9]+M|memory_limit = 100M|g" /etc/php.ini
-sed -i -E "s|display_errors = On|display_errors = Off|g" /etc/php.ini
-ln -s /usr/bin/php-cli /usr/bin/php
-[ -d /usr/lib/php8 ] && [ ! -d /usr/lib/php ] && ln -sf /usr/lib/php8 /usr/lib/php
-/etc/init.d/uhttpd restart
+  if is_package_installed "php8" || is_package_installed "php7"; then
+# Configure uhttpd for PHP
+    safe_uci set "uhttpd.main.ubus_prefix" "/ubus"
+    safe_uci set "uhttpd.main.interpreter" ".php=/usr/bin/php-cgi"
+    safe_uci set "uhttpd.main.index_page" "cgi-bin/luci"
+    safe_uci add_list "uhttpd.main.index_page" "index.html"
+    safe_uci add_list "uhttpd.main.index_page" "index.php"
+    commit_uci "uhttpd"
+    
+# Optimize PHP configuration
+    if [ -f "/etc/php.ini" ]; then
+      cp /etc/php.ini /etc/php.ini.bak
+      sed -i -E "s|memory_limit = [0-9]+M|memory_limit = 128M|g" /etc/php.ini
+      sed -i -E "s|max_execution_time = [0-9]+|max_execution_time = 60|g" /etc/php.ini
+      sed -i -E "s|display_errors = On|display_errors = Off|g" /etc/php.ini
+      sed -i -E "s|;date.timezone =|date.timezone = Asia/Jakarta|g" /etc/php.ini
+      echo "INFO" "PHP configuration optimized"
+    else
+      echo "WARNING" "PHP configuration file not found"
+    fi
+    
+# Create symbolic links for PHP
+    ln -sf /usr/bin/php-cli /usr/bin/php
+    
+# Link PHP libraries if needed
+    if [ -d "/usr/lib/php8" ] && [ ! -d "/usr/lib/php" ]; then
+      ln -sf /usr/lib/php8 /usr/lib/php
+      echo "INFO" "Created PHP library symlink"
+    fi
+    
+# Restart uhttpd
+    /etc/init.d/uhttpd restart
+    echo "INFO" "PHP setup complete"
+  else
+    echo "INFO" "PHP not installed, skipping configuration"
+  fi
+  
+# Function to fix ModemManager issues
+  echo "STEP" "Fixing ModemManager issues For OpenWrt 24.10..."
+
+  if $(grep -q "24.10" /etc/openwrt_release); then
+    echo "INFO" "ModemManager fix for OpenWrt 24.10 detected"
+  else
+    echo "INFO" "No ModemManager fix needed for this version"
+    return
+  fi
+  
+# Check if ModemManager is installed
+  if is_package_installed "modemmanager"; then
+    echo "INFO" "ModemManager detected, disabling..."
+    
+# Disable ModemManager service
+    if [ -f "/etc/init.d/modemmanager" ]; then
+      /etc/init.d/modemmanager disable
+      /etc/init.d/modemmanager stop
+      echo "INFO" "Disabled ModemManager service"
+    fi
+
+    sleep 2
+
+    rm -f /var/run/dbus.pid 2>/dev/null
+    /etc/init.d/dbus restart 2>/dev/null
+    /etc/init.d/modemmanager restart 2>/dev/null
+
+# Create Script Startup
+    if [ ! -f "/etc/uci-defaults/01-modemmanager.sh" ]; then
+      echo "#!/bin/sh" > /etc/uci-defaults/01-modemmanager.sh
+      echo "sleep 5" >> /etc/uci-defaults/01-modemmanager.sh
+      echo "rm -f /var/run/dbus.pid" >> /etc/uci-defaults/01-modemmanager.sh
+      echo "/etc/init.d/dbus restart" >> /etc/uci-defaults/01-modemmanager.sh
+      echo "/etc/init.d/modemmanager restart" >> /etc/uci-defaults/01-modemmanager.sh
+      chmod +x /etc/uci-defaults/01-modemmanager.sh
+      echo "INFO" "Created ModemManager startup script"
+    fi
+  else
+    echo "INFO" "ModemManager not installed, skipping"
+  fi
 
 echo "All first boot setup complete!"
 rm -f /etc/uci-defaults/$(basename $0)
