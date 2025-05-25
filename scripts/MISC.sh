@@ -88,7 +88,7 @@ configure_amlogic_permissions() {
             
 #            for file in "${netifd_files[@]}"; do
                 sed -i "/# setup misc settings/ a\chmod +x $file" files/etc/uci-defaults/99-init-settings.sh
-            done
+#            done
             ;;
         "ULO")
             log "INFO" "Setting up Amlogic file permissions"
@@ -111,7 +111,7 @@ configure_amlogic_permissions() {
             
 #            for file in "${netifd_files[@]}"; do
                 sed -i "/# setup misc settings/ a\chmod +x $file" files/etc/uci-defaults/99-init-settings.sh
-            done
+#            done
             ;;
         *)
             log "INFO" "Removing lib directory for non-Amlogic build"
